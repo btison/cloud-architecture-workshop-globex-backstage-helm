@@ -31,7 +31,7 @@ upstream:
 
   ingress:
     enabled: true
-    host: "{{ .Values.global.host }}" 
+    host: backstage-3.apps.cluster-9g2sc.9g2sc.sandbox907.opentlc.com
     annotations:
       route.openshift.io/termination: "edge"
   
@@ -64,5 +64,5 @@ upstream:
             name: backstage-postgresql
 
 
-global:
+changeme:
   host: backstage.apps.cluster-9g2sc.9g2sc.sandbox907.opentlc.com
