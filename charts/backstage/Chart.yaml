@@ -23,7 +23,6 @@ dependencies:
     tags:
       - bitnami-common
     version: 1.x.x
-  - name: backstage
-    repository: https://backstage.github.io/charts
-    version: ">=0.18.0"
-    alias: upstream
+  - name: postgresql
+    repository: https://charts.bitnami.com/bitnami
+    version: 11.x.x

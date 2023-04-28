@@ -1,68 +1,313 @@
 # -- Upstream Backstage [chart configuration](https://github.com/backstage/charts/blob/main/charts/backstage/values.yaml)
 # @default -- Use Openshift compatible settings
-upstream:
-  backstage:
-    image:
-      registry: quay.io
-      repository: janus-idp/redhat-backstage-build
-      tag: latest
-      debug: true
-    extraEnvVars:
-      - name: "APP_CONFIG_app_baseUrl"
-        value: "https://{{ .Values.ingress.host }}"
-      - name: "APP_CONFIG_backend_baseUrl"
-        value: "https://{{ .Values.ingress.host }}"
-      - name: "APP_CONFIG_backend_cors_origin"
-        value: "https://{{ .Values.ingress.host }}"
-      - name: "APP_CONFIG_backend_database_client"
-        value: pg
-      - name: "APP_CONFIG_backend_database_connection_host"
-        value: "{{ include \"backstage.postgresql.host\" . }}"
-      - name: "APP_CONFIG_backend_database_connection_port"
-        value: '5432'
-      - name: "APP_CONFIG_backend_database_connection_user"
-        value: "{{ .Values.postgresql.auth.username }}"
-      - name: "APP_CONFIG_backend_database_connection_password"
-        valueFrom:
-          secretKeyRef:
-            key: postgres-password
-            name: "{{ include \"backstage.postgresql.fullname\" . }}"
-    installDir: /opt/app-root/src
+# -- String to partially override common.names.fullname
+nameOverride: ""
 
-  ingress:
-    enabled: true
-    host: backstage-3.apps.cluster-9g2sc.9g2sc.sandbox907.opentlc.com
-    annotations:
-      route.openshift.io/termination: "edge"
+# -- String to fully override common.names.fullname
+fullnameOverride: "backstage-2"
+
+# -- Default Kubernetes cluster domain
+clusterDomain: cluster.local
+
+# -- Labels to add to all deployed objects
+commonLabels: {}
+
+# -- Annotations to add to all deployed objects
+commonAnnotations: {}
+
+# -- Array of extra objects to deploy with the release
+extraDeploy: []
+
+# -- Enable diagnostic mode in the Deployment
+diagnosticMode:
+
+  # -- Enable diagnostic mode (all probes will be disabled and the command will be overridden)
+  enabled: false
+
+  # -- Command to override all containers in the Deployment
+  command:
+    - sleep
+
+  # -- Args to override all containers in the Deployment
+  args:
+    - infinity
+
+
+
+
+backstage:
+  replicas: 1
+  image:
+    registry: quay.io
+    repository: janus-idp/redhat-backstage-build
+    tag: latest
+    debug: true
   
-  postgresql:
-    enabled: true
+  # -- Container ports on the Deployment
+  containerPorts:
+    backend: 7007
+
+  # -- Backstage container command
+  command: ["node", "packages/backend"]
+
+  # -- Backstage container command arguments
+  args: []
+
+  # -- Extra app configuration files to inline into command arguments
+  extraAppConfig: []
+
+  # -- Deployment sidecars
+  extraContainers: []
+
+  # -- Backstage container environment variables
+  extraEnvVars:
+    - name: "APP_CONFIG_app_baseUrl"
+      value: 'https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}'
+    - name: "APP_CONFIG_backend_baseUrl"
+      value: 'https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}'
+    - name: "APP_CONFIG_backend_cors_origin"
+      value: 'https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}'
+    - name: "APP_CONFIG_backend_database_client"
+      value: pg
+    - name: "APP_CONFIG_backend_database_connection_host"
+      value: "{{ include \"backstage.postgresql.host\" . }}"
+    - name: "APP_CONFIG_backend_database_connection_port"
+      value: '5432'
+    - name: "APP_CONFIG_backend_database_connection_user"
+      value: "{{ .Values.postgresql.auth.username }}"
+    - name: "APP_CONFIG_backend_database_connection_password"
+      valueFrom:
+        secretKeyRef:
+          key: postgres-password
+          name: "{{ include \"backstage.postgresql.fullname\" . }}"
+  # -- Backstage container environment variables from Secrets
+  extraEnvVarsSecrets: []
+
+  # -- Backstage container additional volume mounts
+  extraVolumeMounts: []
+
+  # -- Backstage container additional volumes
+  extraVolumes: []
+
+  # -- Backstage container init containers
+  initContainers: []
+
+  # -- Directory containing the backstage installation
+  installDir: /opt/app-root/src
+
+  # -- Resource requests/limits
+  # <br /> Ref: https://kubernetes.io/docs/user-guide/compute-resources/
+  # <!-- E.g.
+  # resources:
+  #   limits:
+  #     memory: 1Gi
+  #     cpu: 1000m
+  #   requests:
+  #     memory: 250Mi
+  #     cpu: 100m -->
+  resources: {}
+
+  # -- Security settings for a Pod.
+  #  The security settings that you specify for a Pod apply to all Containers in the Pod.
+  # <br /> Ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-pod
+  podSecurityContext: {}
+
+  # -- Security settings for a Container.
+  # <br /> Ref: https://kubernetes.io/docs/tasks/configure-pod-container/security-context/#set-the-security-context-for-a-container
+  containerSecurityContext: {}
+
+  # Allows to define the appConfig as a multiline string that generates a ConfigMap
+  # automatically, not requiring to have it pre provisioned as with the extraAppConfig key.
+  # DO NOT USE if you need to put sensitive data in the appConfig.
+  # E.g:
+  # appConfig:
+  #   app:
+  #     baseUrl: https://somedomain.tld
+  # -- Generates ConfigMap and configures it in the Backstage pods
+  appConfig: {}
+
+  # -- Node labels for pod assignment
+  # <br /> Ref: https://kubernetes.io/docs/user-guide/node-selection/
+  nodeSelector: {}
+
+  # -- Node tolerations for server scheduling to nodes with taints
+  # <br /> Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
+  tolerations: []
+  #  - key: "key"
+  #    operator: "Equal|Exists"
+  #    value: "value"
+  #    effect: "NoSchedule|PreferNoSchedule|NoExecute"
+
+  # -- Annotations to add to the backend deployment pods
+  podAnnotations: {}
+
+  # -- Additional custom annotations for the `Deployment` resource
+  annotations: {}
+
+ingress:
+  enabled: true
+  host: ""
+  annotations:
+    route.openshift.io/termination: "edge"
+  # -- Ingress TLS parameters
+  tls:
+
+    # -- Enable TLS configuration for the host defined at `ingress.host` parameter
+    enabled: false
+
+    # -- The name to which the TLS Secret will be called
+    secretName: ""
+
+service:
+
+  # -- Kubernetes Service type
+  type: ClusterIP
+
+  # -- Backstage svc port for client connections
+  ports:
+    backend: 7007
+
+    # -- Backstage svc port name
+    name: http-backend
+
+    # -- Backstage svc target port referencing receiving pod container port
+    targetPort: backend
+
+  # -- Node port for the Backstage client connections
+  # Choose port between `30000-32767`
+  nodePorts:
+    backend: ""
+
+  # -- Control where client requests go, to the same pod or round-robin
+  # (values: `ClientIP` or `None`)
+  # <br /> Ref: https://kubernetes.io/docs/user-guide/services/
+  sessionAffinity: None
+
+  # -- Backstage service Cluster IP
+  #
+  # <br /> E.g `clusterIP: None`
+  clusterIP: ""
+
+  # -- Backstage service Load Balancer IP
+  #
+  # <br /> Ref: https://kubernetes.io/docs/user-guide/services/#type-loadbalancer
+  loadBalancerIP: ""
+
+  # -- Load Balancer sources
+  #
+  # <br /> Ref: https://kubernetes.io/docs/tasks/access-application-cluster/cnfigure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service
+  # <br /> E.g `loadBalancerSourceRanges: [10.10.10.0/24]`
+  loadBalancerSourceRanges: []
+
+  # -- Backstage service external traffic policy
+  #
+  # Ref: https://kubernetes.io/docs/tasks/access-application-cluster/create-external-load-balancer/#preserving-the-client-source-ip
+  externalTrafficPolicy: Cluster
+
+  # -- Additional custom annotations for Backstage service
+  annotations: {}
+
+  # -- Extra ports to expose in the Backstage service (normally used with the `sidecar` value)
+  extraPorts: []
+
+# -- Network policies
+# <br /> Ref: https://kubernetes.io/docs/concepts/services-networking/network-policies/
+networkPolicy:
+
+  # -- networkPolicy.enabled Specifies whether a NetworkPolicy should be created
+  enabled: false
+
+  externalAccess:
+    from: []
+
+  # -- Custom network policy rule
+  egressRules:
+
+    # -- Additional custom egress rules
+    # e.g:
+    # customRules:
+    #   - to:
+    #       - namespaceSelector:
+    #           matchLabels:
+    #             label: example
+    customRules: []
+
+
+# -- PostgreSQL [chart configuration](https://github.com/bitnami/charts/blob/master/bitnami/postgresql/values.yaml)
+postgresql:
+  enabled: true
+  database: backstage
+  postgresqlDataDir: /var/lib/pgsql/data/userdata
+  auth:
+    username: postgres
     database: backstage
-    postgresqlDataDir: /var/lib/pgsql/data/userdata
-    auth:
-      username: postgres
-      database: backstage
-    image:
-      registry: registry.redhat.io
-      repository: rhel9/postgresql-13
-      tag: 1-73
-    primary:
-      securityContext:
-        enabled: false
-      podSecurityContext:
-        enabled: false
-      containerSecurityContext:
-        enabled: false
-      persistence:
-        enabled: true
-        mountPath: /var/lib/pgsql/data
-      extraEnvVars:
-      - name: POSTGRESQL_ADMIN_PASSWORD
-        valueFrom:
-          secretKeyRef:
-            key: postgres-password
-            name: backstage-postgresql
+  image:
+    registry: registry.redhat.io
+    repository: rhel9/postgresql-13
+    tag: 1-73
+  primary:
+    securityContext:
+      enabled: false
+    podSecurityContext:
+      enabled: false
+    containerSecurityContext:
+      enabled: false
+    persistence:
+      enabled: true
+      mountPath: /var/lib/pgsql/data
+    extraEnvVars:
+    - name: POSTGRESQL_ADMIN_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          key: postgres-password
+          name: backstage-postgresql  
+# -- PostgreSQL architecture (`standalone` or `replication`)
+  architecture: standalone
+  # -- Service Account Configuration
+# @default -- See below
+serviceAccount:
+
+  # -- Enable the creation of a ServiceAccount for Backstage pods
+  create: false
+
+  # -- Name of the ServiceAccount to use
+  # If not set and `serviceAccount.create` is true, a name is generated
+  name: ""
+
+  # -- Additional custom labels to the service ServiceAccount.
+  labels: {}
+
+  # -- Additional custom annotations for the ServiceAccount.
+  annotations: {}
+
+  # -- Auto-mount the service account token in the pod
+  automountServiceAccountToken: true
+
+# -- Metrics configuration
+metrics:
+
+  # -- ServiceMonitor configuration
+  # <br /> Allows configuring your backstage instance as a scrape target for [Prometheus](https://github.com/prometheus/prometheus) using a ServiceMonitor custom resource that [Prometheus Operator](https://github.com/prometheus-operator/prometheus-operator) can understand.
+  serviceMonitor:
+
+    # -- If enabled, a ServiceMonitor resource for Prometheus Operator is created
+    # <br /> Prometheus Operator must be installed in your cluster prior to enabling.
+    enabled: false
+
+    # -- ServiceMonitor annotations
+    annotations: {}
+
+    # -- Additional ServiceMonitor labels
+    labels: {}
+
+    # -- ServiceMonitor scrape interval
+    interval: null
+
+    # -- ServiceMonitor endpoint path
+    # <br /> Note that the /metrics endpoint is NOT present in a freshly scaffolded Backstage app. To setup, follow the [Prometheus metrics tutorial](https://github.com/backstage/backstage/blob/master/contrib/docs/tutorials/prometheus-metrics.md).
+    path: /metrics
 
 
-changeme:
-  host: backstage.apps.cluster-9g2sc.9g2sc.sandbox907.opentlc.com
+
+base_domain: apps.cluster-9g2sc.9g2sc.sandbox907.opentlc.com
+cluster_guid: 9g2sc
