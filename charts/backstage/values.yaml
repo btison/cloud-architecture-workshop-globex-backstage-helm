@@ -124,7 +124,13 @@ backstage:
   #   app:
   #     baseUrl: https://somedomain.tld
   # -- Generates ConfigMap and configures it in the Backstage pods
-  appConfig: {}
+  appConfig: |
+    app:
+      title: Globex Backstage
+      baseUrl: https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}
+    organization:
+      name: Globex International
+
 
   # -- Node labels for pod assignment
   # <br /> Ref: https://kubernetes.io/docs/user-guide/node-selection/
