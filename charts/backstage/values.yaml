@@ -61,18 +61,18 @@ backstage:
 
   # -- Backstage container environment variables
   extraEnvVars:
-    - name: "APP_CONFIG_app_baseUrl"
-      value: 'https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}'
-    - name: "APP_CONFIG_backend_baseUrl"
-      value: 'https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}'
-    - name: "APP_CONFIG_backend_cors_origin"
-      value: 'https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}'
-    - name: "APP_CONFIG_backend_database_client"
-      value: pg
-    - name: "APP_CONFIG_backend_database_connection_host"
-      value: "{{ include \"backstage.postgresql.host\" . }}"
-    - name: "APP_CONFIG_backend_database_connection_port"
-      value: '5432'
+    # - name: "APP_CONFIG_app_baseUrl"
+    #   value: 'https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}'
+    # - name: "APP_CONFIG_backend_baseUrl"
+    #   value: 'https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}'
+    # - name: "APP_CONFIG_backend_cors_origin"
+    #   value: 'https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}'
+    # - name: "APP_CONFIG_backend_database_client"
+    #   value: pg
+    # - name: "APP_CONFIG_backend_database_connection_host"
+    #   value: "{{ include \"backstage.postgresql.host\" . }}"
+    # - name: "APP_CONFIG_backend_database_connection_port"
+    #   value: '5432'
     - name: "APP_CONFIG_backend_database_connection_user"
       value: "{{ .Values.postgresql.auth.username }}"
     - name: "APP_CONFIG_backend_database_connection_password"
@@ -124,12 +124,57 @@ backstage:
   #   app:
   #     baseUrl: https://somedomain.tld
   # -- Generates ConfigMap and configures it in the Backstage pods
-  # appConfig: |
-  #   app:
-  #     title: Globex Backstage
-  #     baseUrl: https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}
-  #   organization:
-  #     name: Globex International
+  appConfig: |
+    app:
+      title: Globex Backstage
+      baseUrl: https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}
+
+    organization:
+      name: Globex 
+
+    backend:
+      baseUrl: https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}
+      listen:
+        port: 7007
+      csp:
+        connect-src: ["'self'", 'http:', 'https:']
+        # Content-Security-Policy directives follow the Helmet format: https://helmetjs.github.io/#reference
+        # Default Helmet Content-Security-Policy values can be removed by setting the key to false
+      cors:
+        origin: https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}
+        methods: [GET, POST, PUT, DELETE]
+        credentials: true
+      
+     # config options: https://node-postgres.com/api/client
+      database:
+        client: pg
+        connection:
+          host: {{ include "backstage.postgresql.host" . }}
+          port: 5432
+          user: postgres
+          password: changeit
+          # https://node-postgres.com/features/ssl
+          # ssl: 
+          # see https://www.postgresql.org/docs/current/libpq-ssl.html Table 33.1. SSL Mode Descriptions (e.g. require)
+          #   ca: 
+          #     $file: /var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt
+           
+      cache:
+        store: memory
+      # workingDirectory: /tmp # Use this to configure a working directory for the scaffolder, defaults to the OS temp-dir
+
+    
+    # Reference documentation http://backstage.io/docs/features/techdocs/configuration
+    # Note: After experimenting with basic setup, use CI/CD to generate docs
+    # and an external cloud storage when deploying TechDocs for production use-case.
+    # https://backstage.io/docs/features/techdocs/how-to-guides#how-to-migrate-from-techdocs-basic-to-recommended-deployment-approach
+    techdocs:
+      builder: 'local' # Alternatives - 'external'
+      generator:
+        runIn: 'local' # Alternatives - 'local'
+      publisher:
+        type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
+
 
 
   # -- Node labels for pod assignment
@@ -317,3 +362,4 @@ metrics:
 
 base_domain: apps.cluster-zblnd.zblnd.sandbox2741.opentlc.com
 cluster_guid: zblnd
+usePostgresql: true
