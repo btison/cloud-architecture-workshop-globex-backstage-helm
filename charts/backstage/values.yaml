@@ -315,5 +315,5 @@ metrics:
 
 
 
-base_domain: apps.cluster-9g2sc.9g2sc.sandbox907.opentlc.com
-cluster_guid: 9g2sc
+base_domain: apps.cluster-zblnd.zblnd.sandbox2741.opentlc.com
+cluster_guid: zblnd
