@@ -124,12 +124,12 @@ backstage:
   #   app:
   #     baseUrl: https://somedomain.tld
   # -- Generates ConfigMap and configures it in the Backstage pods
-  appConfig: |
-    app:
-      title: Globex Backstage
-      baseUrl: https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}
-    organization:
-      name: Globex International
+  # appConfig: |
+  #   app:
+  #     title: Globex Backstage
+  #     baseUrl: https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}
+  #   organization:
+  #     name: Globex International
 
 
   # -- Node labels for pod assignment
