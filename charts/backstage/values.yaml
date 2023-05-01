@@ -40,6 +40,7 @@ backstage:
   image:
     registry: quay.io
     repository: janus-idp/redhat-backstage-build
+    #repository: ablock/backstage-oauth
     tag: latest
     debug: true
   
@@ -57,7 +58,32 @@ backstage:
   extraAppConfig: []
 
   # -- Deployment sidecars
-  extraContainers: []
+  extraContainers:
+  - name: oauth-proxy 
+    args:
+      - -provider=openshift
+      - -https-address=:8888
+      - -http-address=
+      - -email-domain=*
+      - -upstream=http://localhost:7007
+      - -tls-cert=/etc/tls/private/tls.crt
+      - -tls-key=/etc/tls/private/tls.key
+      - -cookie-secret="{{ default (randAlpha 32 | lower | b64enc) .Values.oauthProxy.cookieSecret }}"
+      - -openshift-service-account={{ include "common.names.fullname" . }}
+      - -openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+      - -skip-auth-regex=^/metrics
+      - -skip-provider-button
+      - -request-logging=true
+    image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.12
+    imagePullPolicy: IfNotPresent
+    ports:
+      - name: oauth-proxy
+        containerPort: 8888    
+        protocol: TCP
+    volumeMounts:
+      - mountPath: /etc/tls/private
+        name: backstage-tls
+  
 
   # -- Backstage container environment variables
   extraEnvVars:
@@ -73,6 +99,10 @@ backstage:
     #   value: "{{ include \"backstage.postgresql.host\" . }}"
     # - name: "APP_CONFIG_backend_database_connection_port"
     #   value: '5432'
+    # Since we are running two clusters in the workshop, each with user{1..45} we need to add the guid
+    # so users won't step on each other's feet in GitHub
+    - name: "CLUSTERGUID"
+      value: "{{ .Values.cluster_guid }}"
     - name: "APP_CONFIG_backend_database_connection_user"
       value: "{{ .Values.postgresql.auth.username }}"
     - name: "APP_CONFIG_backend_database_connection_password"
@@ -84,13 +114,25 @@ backstage:
   extraEnvVarsSecrets: []
 
   # -- Backstage container additional volume mounts
-  extraVolumeMounts: []
+  extraVolumeMounts:
+      - mountPath: /tmp/fakepath
+        name: backstage-tls
 
   # -- Backstage container additional volumes
-  extraVolumes: []
+  extraVolumes:
+    - name: backstage-tls
+      secret:
+        defaultMode: 420
+        secretName: backstage-tls
+
 
   # -- Backstage container init containers
   initContainers: []
+
+
+
+
+
 
   # -- Directory containing the backstage installation
   installDir: /opt/app-root/src
@@ -195,11 +237,14 @@ backstage:
   # -- Additional custom annotations for the `Deployment` resource
   annotations: {}
 
+# -- Route re-encrytion used with OpenShift OAuth Proxy
+# Ref: https://janus-idp.io/blog/using-openshift-authentication-to-secure-access-to-backstage#ingress-configuration
 ingress:
   enabled: true
-  host: ""
+  host: '{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}'
   annotations:
-    route.openshift.io/termination: "edge"
+    route.openshift.io/termination: "reencrypt"
+    
   # -- Ingress TLS parameters
   tls:
 
@@ -216,13 +261,13 @@ service:
 
   # -- Backstage svc port for client connections
   ports:
-    backend: 7007
+    backend: 8888
 
     # -- Backstage svc port name
     name: http-backend
 
     # -- Backstage svc target port referencing receiving pod container port
-    targetPort: backend
+    targetPort: oauth-proxy
 
   # -- Node port for the Backstage client connections
   # Choose port between `30000-32767`
@@ -256,8 +301,11 @@ service:
   externalTrafficPolicy: Cluster
 
   # -- Additional custom annotations for Backstage service
-  annotations: {}
-
+  # -- Used for OPenShift OAuth Proxy Sidecar
+  # Ref: https://janus-idp.io/blog/using-openshift-authentication-to-secure-access-to-backstage#tls-certificate-management
+  annotations: 
+    service.alpha.openshift.io/serving-cert-secret-name: backstage-tls
+  
   # -- Extra ports to expose in the Backstage service (normally used with the `sidecar` value)
   extraPorts: []
 
@@ -317,9 +365,9 @@ postgresql:
   # -- Service Account Configuration
 # @default -- See below
 serviceAccount:
-
+ 
   # -- Enable the creation of a ServiceAccount for Backstage pods
-  create: false
+  create: true
 
   # -- Name of the ServiceAccount to use
   # If not set and `serviceAccount.create` is true, a name is generated
@@ -329,7 +377,10 @@ serviceAccount:
   labels: {}
 
   # -- Additional custom annotations for the ServiceAccount.
-  annotations: {}
+  # -- Used for the Oauth Client Callback
+  # Ref: https://janus-idp.io/blog/using-openshift-authentication-to-secure-access-to-backstage#oauth-client-configuration
+  annotations: 
+    serviceaccounts.openshift.io/oauth-redirecturi.backstage: 'https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}/oauth/callback'
 
   # -- Auto-mount the service account token in the pod
   automountServiceAccountToken: true
@@ -358,8 +409,10 @@ metrics:
     # <br /> Note that the /metrics endpoint is NOT present in a freshly scaffolded Backstage app. To setup, follow the [Prometheus metrics tutorial](https://github.com/backstage/backstage/blob/master/contrib/docs/tutorials/prometheus-metrics.md).
     path: /metrics
 
-
+oauthProxy:
+  cookieSecret: ""
 
 base_domain: apps.cluster-zblnd.zblnd.sandbox2741.opentlc.com
 cluster_guid: zblnd
 usePostgresql: true
+
