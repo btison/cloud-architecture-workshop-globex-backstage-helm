@@ -39,7 +39,7 @@ backstage:
   replicas: 1
   image:
     registry: quay.io
-    repository: janus-idp/redhat-backstage-build
+    repository: cloud-architecture-workshop/backstage
     #repository: ablock/backstage-oauth
     tag: latest
     debug: true
