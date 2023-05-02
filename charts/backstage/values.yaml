@@ -87,6 +87,8 @@ backstage:
 
   # -- Backstage container environment variables
   extraEnvVars:
+    - name: LOG_LEVEL
+      value: 'debug'
     # - name: "APP_CONFIG_app_baseUrl"
     #   value: 'https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}'
     # - name: "APP_CONFIG_backend_baseUrl"
