@@ -39,6 +39,7 @@ backstage:
   replicas: 1
   image:
     registry: quay.io
+    #repository: janus-idp/redhat-backstage-build
     repository: cloud-architecture-workshop/backstage
     #repository: ablock/backstage-oauth
     tag: latest
@@ -57,32 +58,63 @@ backstage:
   # -- Extra app configuration files to inline into command arguments
   extraAppConfig: []
 
-  # -- Deployment sidecars
+  ## Deployment sidecars
   extraContainers:
-  - name: oauth-proxy 
-    args:
-      - -provider=openshift
-      - -https-address=:8888
-      - -http-address=
-      - -email-domain=*
-      - -upstream=http://localhost:7007
-      - -tls-cert=/etc/tls/private/tls.crt
-      - -tls-key=/etc/tls/private/tls.key
-      - -cookie-secret="{{ default (randAlpha 32 | lower | b64enc) .Values.oauthProxy.cookieSecret }}"
-      - -openshift-service-account={{ include "common.names.fullname" . }}
-      - -openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-      - -skip-auth-regex=^/metrics
-      - -skip-provider-button
-      - -request-logging=true
-    image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.12
-    imagePullPolicy: IfNotPresent
-    ports:
-      - name: oauth-proxy
-        containerPort: 8888    
-        protocol: TCP
-    volumeMounts:
-      - mountPath: /etc/tls/private
-        name: backstage-tls
+    - name: oauth2-proxy
+      env:
+        - name: OAUTH2_PROXY_CLIENT_ID
+          value: '{{ required "Keycloak Client Secret is Required" .Values.global.keycloak.clientId }}'
+        - name: OAUTH2_PROXY_CLIENT_SECRET
+          value: '{{ required "Keycloak Client Secret is Required" .Values.global.keycloak.clientSecret }}'
+        - name: OAUTH2_PROXY_COOKIE_SECRET
+          value: '{{ default (randAlpha 32 | lower | b64enc) .Values.global.keycloak.cookieSecret }}'
+        - name: OAUTH2_PROXY_OIDC_ISSUER_URL
+          value: '{{ required "Keycloak Issuer URL is Required" .Values.global.keycloak.issuerUrl }}'
+        - name: OAUTH2_PROXY_SSL_INSECURE_SKIP_VERIFY
+          value: 'true'
+      ports:
+        - name: oauth2-proxy
+          containerPort: 4180
+          protocol: TCP
+      imagePullPolicy: IfNotPresent
+      image: 'quay.io/oauth2-proxy/oauth2-proxy:latest'
+      args:
+        - '--provider=oidc'
+        - '--email-domain=*'
+        - '--upstream=http://localhost:7007'
+        - '--http-address=:4180'
+        - '--skip-provider-button'
+        - '--request-logging=true'
+  # - name: oauth-proxy 
+  #   args:
+  #     - -provider=openshift
+  #     - -https-address=:8888
+  #     - -http-address=:8887
+  #     - -email-domain=*
+  #     - -upstream=http://localhost:7007
+  #     - -tls-cert=/etc/tls/private/tls.crt
+  #     - -tls-key=/etc/tls/private/tls.key
+  #     - -cookie-secret="{{ default (randAlpha 32 | lower | b64enc) .Values.oauthProxy.cookieSecret }}"
+  #     - -openshift-service-account={{ include "common.names.fullname" . }}
+  #     - -openshift-ca=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+  #     - -skip-auth-regex=^/metrics
+  #     - -skip-provider-button
+  #     - -request-logging=true
+  #     - -pass-host-header=true
+  #     - -pass-access-token=true
+    
+  #   image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.12
+  #   imagePullPolicy: IfNotPresent
+  #   ports:
+  #     - name: oauth-proxy
+  #       containerPort: 8888    
+  #       protocol: TCP
+  #     - name: oauth-http
+  #       containerPort: 8887    
+  #       protocol: TCP 
+  #   volumeMounts:
+  #     - mountPath: /etc/tls/private
+  #       name: backstage-tls
   
 
   # -- Backstage container environment variables
@@ -117,15 +149,15 @@ backstage:
 
   # -- Backstage container additional volume mounts
   extraVolumeMounts:
-      - mountPath: /tmp/fakepath
-        name: backstage-tls
+      # - mountPath: /tmp/fakepath
+      #   name: backstage-tls
 
   # -- Backstage container additional volumes
   extraVolumes:
-    - name: backstage-tls
-      secret:
-        defaultMode: 420
-        secretName: backstage-tls
+    # - name: backstage-tls
+    #   secret:
+    #     defaultMode: 420
+    #     secretName: backstage-tls
 
 
   # -- Backstage container init containers
@@ -180,10 +212,62 @@ backstage:
       providers:
         oauth2Proxy: {}
 
+    integrations:
+      github:
+        - host: github.com
+          
+
+    proxy:
+      '/user-avatars':
+        target: https://api.dicebear.com/6.x/open-peeps
+        allowedMethods: ['GET']
+        
+
+    # scaffolder:
+      # see https://backstage.io/docs/features/software-templates/configuration for software template options
+    
+
+
+    catalog:
+      rules:
+        - allow: [Component, System, API, Resource, Location]
+      locations:
+
+        # # Uncomment these lines to add more example data
+        # - type: url
+        #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/all.yaml
+
+        # # Uncomment these lines to add an example org
+        # - type: url
+        #   target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/acme-corp.yaml
+        #   rules:
+        #     - allow: [User, Group]
+
+        - type: url
+          target: https://github.com/backstage/software-templates/blob/main/scaffolder-templates/springboot-grpc-template/template.yaml
+          rules:
+            - allow: [Template]
+
+
+
+        # Globex / Demo templates
+        - type: url
+          target: https://github.com/rh-cloud-arch-workshops-entities/globex-templates/blob/main/module1/template.yaml
+          rules:
+            - allow: [Template]
+
+        # Globex / Demo org structure
+        - type: url
+          target: https://github.com/rh-cloud-arch-workshops-entities/globex-org/blob/main/users-and-groups.yaml
+          rules:
+            - allow: [User, Group]
+
     backend:
       baseUrl: https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}
       listen:
         port: 7007
+      
+        
       csp:
         connect-src: ["'self'", 'http:', 'https:']
         # Content-Security-Policy directives follow the Helmet format: https://helmetjs.github.io/#reference
@@ -249,7 +333,7 @@ ingress:
   enabled: true
   host: '{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}'
   annotations:
-    route.openshift.io/termination: "reencrypt"
+    route.openshift.io/termination: "edge"
     
   # -- Ingress TLS parameters
   tls:
@@ -267,13 +351,16 @@ service:
 
   # -- Backstage svc port for client connections
   ports:
-    backend: 8888
+    backend: 4180
+    #backend: 8888
+    #backend: 7007
 
     # -- Backstage svc port name
     name: http-backend
 
     # -- Backstage svc target port referencing receiving pod container port
     targetPort: oauth-proxy
+
 
   # -- Node port for the Backstage client connections
   # Choose port between `30000-32767`
@@ -310,7 +397,7 @@ service:
   # -- Used for OPenShift OAuth Proxy Sidecar
   # Ref: https://janus-idp.io/blog/using-openshift-authentication-to-secure-access-to-backstage#tls-certificate-management
   annotations: 
-    service.alpha.openshift.io/serving-cert-secret-name: backstage-tls
+    # service.alpha.openshift.io/serving-cert-secret-name: backstage-tls
   
   # -- Extra ports to expose in the Backstage service (normally used with the `sidecar` value)
   extraPorts: []
@@ -386,7 +473,7 @@ serviceAccount:
   # -- Used for the Oauth Client Callback
   # Ref: https://janus-idp.io/blog/using-openshift-authentication-to-secure-access-to-backstage#oauth-client-configuration
   annotations: 
-    serviceaccounts.openshift.io/oauth-redirecturi.backstage: 'https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}/oauth/callback'
+    # serviceaccounts.openshift.io/oauth-redirecturi.backstage: 'https://{{ include "backstage.fullname" . }}.{{ .Values.base_domain }}/oauth/callback'
 
   # -- Auto-mount the service account token in the pod
   automountServiceAccountToken: true
@@ -416,9 +503,15 @@ metrics:
     path: /metrics
 
 oauthProxy:
-  cookieSecret: ""
+  cookieSecret: "1234567890123456789012"
 
-base_domain: apps.cluster-zblnd.zblnd.sandbox2741.opentlc.com
-cluster_guid: zblnd
+base_domain: apps.cluster-26v9d.26v9d.sandbox2355.opentlc.com
+cluster_guid: 26v9d
 usePostgresql: true
 
+global:
+  keycloak:
+    issuerUrl: 'https://keycloak-keycloak.apps.cluster-26v9d.26v9d.sandbox2355.opentlc.com/realms/backstage'
+    clientId: 'backstage'
+    clientSecret: ''
+    cookieSecret: ''
