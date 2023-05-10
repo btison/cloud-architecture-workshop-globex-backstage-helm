@@ -76,3 +76,10 @@ Certificate:
 
 ```
 
+## UPDATE 2023-05-10 For the Summit Demo, the Let's Encrypt Certificate has been enabled on API Endpoints as well
+
+Therefore, we don't need to fiddle around with getting the certificate from the API endpoint and inject it into the Keycloak truststore.
+
+Also, since RHSSO has already been enabled for some labs and is available inside our cluster, we are using RHSSO and won't have to deploy a separate Keycloak instance.
+
+Check the comments in the [sa-rhsso-oauthredirect.yaml](../backstage/templates/sa-rhsso-oauthredirect.yaml) file.

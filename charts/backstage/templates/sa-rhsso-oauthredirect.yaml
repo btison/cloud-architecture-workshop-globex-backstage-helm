@@ -1,0 +1,17 @@
+# This is a hardcoded SA that is needed for the OAuth between RHSSO (Keycloak) and OpenShift
+# The serviceaccount name "system:serviceaccount:rhsso:rhsso" is the Client ID in the OpenShiftv4 Identity Provider,
+# The token from the automatically created token secret 
+#
+#      oc get secrets $(oc get secrets | grep rhsso-token | awk '{ print $1 }') -o jsonpath={.data.token} | base64 -d 
+#
+# is the Client Secret in the OpenShift v4 IDP config in RHSSO
+# The IDP "Base URL" is the cluster's API endpoint (unless changed https://api.<clusterurl>:6443) 
+# Therefore, the API endpoint needs to be signed with a certificate from a known CA (that the RHSSO/Keycloak Java Runtime accepts)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    serviceaccounts.openshift.io/oauth-redirectreference.keycloak: >-
+      {"kind":"OAuthRedirectReference","apiVersion":"v1","reference":{"kind":"Route","name":"rhsso"}}
+  name: rhsso
+  namespace: rhsso

@@ -85,6 +85,7 @@ backstage:
         - '--http-address=:4180'
         - '--skip-provider-button'
         - '--request-logging=true'
+        - '--insecure-oidc-allow-unverified-email=true'
   # - name: oauth-proxy 
   #   args:
   #     - -provider=openshift
@@ -356,10 +357,10 @@ service:
     #backend: 7007
 
     # -- Backstage svc port name
-    name: http-backend
+    #name: http-backend
 
     # -- Backstage svc target port referencing receiving pod container port
-    targetPort: oauth-proxy
+    targetPort: 4180
 
 
   # -- Node port for the Backstage client connections
@@ -505,13 +506,13 @@ metrics:
 oauthProxy:
   cookieSecret: "1234567890123456789012"
 
-base_domain: apps.cluster-26v9d.26v9d.sandbox2355.opentlc.com
-cluster_guid: 26v9d
+base_domain: apps.cluster-p4967.p4967.sandbox1308.opentlc.com
+cluster_guid: p4967
 usePostgresql: true
 
 global:
   keycloak:
-    issuerUrl: 'https://keycloak-keycloak.apps.cluster-26v9d.26v9d.sandbox2355.opentlc.com/realms/backstage'
+    issuerUrl: 'https://sso.apps.cluster-p4967.p4967.sandbox1308.opentlc.com/auth/realms/backstage'
     clientId: 'backstage'
-    clientSecret: ''
+    clientSecret: 'NmNplwgNLJjtiDTweYPCKoVlfe3IEvm8'
     cookieSecret: ''
