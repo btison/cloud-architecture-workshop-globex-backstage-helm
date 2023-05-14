@@ -21,3 +21,6 @@
 .idea/
 *.tmproj
 .vscode/
+
+#ignore the SSO SA temporarily
+templates/sa-rhsso-oauthredirect.yaml

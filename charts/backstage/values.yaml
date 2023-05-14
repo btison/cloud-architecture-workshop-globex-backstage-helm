@@ -253,7 +253,7 @@ backstage:
 
         # Globex / Demo templates
         - type: url
-          target: https://github.com/rh-cloud-arch-workshops-entities/globex-templates/blob/main/module1/template.yaml
+          target: https://github.com/rh-cloud-arch-workshops-entities/globex-templates/blob/main/all-modules.yaml
           rules:
             - allow: [Template]
 
@@ -307,6 +307,117 @@ backstage:
         runIn: 'local' # Alternatives - 'local'
       publisher:
         type: 'local' # Alternatives - 'googleGcs' or 'awsS3'. Read documentation for using alternatives.
+    # ---------temporary, to make the schema happy, need to be removed alongside unused plugins
+    # ------ the first try resulted in numerous 'tsc' errors, so will need to set aside some time
+    # ------ for now, they will remain enabled with example data, but excluded from the frontend
+    #---------------------
+
+    costInsights:
+      engineerCost: 200000
+      engineerThreshold: 0.5
+      products:
+        computeEngine:
+          name: Compute Engine
+          icon: compute
+        cloudDataflow:
+          name: Cloud Dataflow
+          icon: data
+        cloudStorage:
+          name: Cloud Storage
+          icon: storage
+        bigQuery:
+          name: BigQuery
+          icon: search
+        events:
+          name: Events
+          icon: data
+      metrics:
+        DAU:
+          name: Daily Active Users
+          default: true
+        MSC:
+          name: Monthly Subscribers
+      currencies:
+        engineers:
+          label: 'Engineers 🛠'
+          unit: 'engineer'
+        usd:
+          label: 'US Dollars 💵'
+          kind: 'USD'
+          unit: 'dollar'
+          prefix: '$'
+          rate: 1
+        carbonOffsetTons:
+          label: 'Carbon Offset Tons ♻️⚖️s'
+          kind: 'CARBON_OFFSET_TONS'
+          unit: 'carbon offset ton'
+          rate: 3.5
+        beers:
+          label: 'Beers 🍺'
+          kind: 'BEERS'
+          unit: 'beer'
+          rate: 4.5
+        pintsIceCream:
+          label: 'Pints of Ice Cream 🍦'
+          kind: 'PINTS_OF_ICE_CREAM'
+          unit: 'ice cream pint'
+          rate: 5.5
+    pagerduty:
+      eventsBaseUrl: 'https://events.pagerduty.com/v2'
+    jenkins:
+      instances:
+        - name: default
+          baseUrl: https://jenkins.example.com
+          username: backstage-bot
+          apiKey: 123456789abcdef0123456789abcedf012
+
+    azureDevOps:
+      host: dev.azure.com
+      token: my-token
+      organization: my-company
+
+    apacheAirflow:
+      baseUrl: https://your.airflow.instance.com
+
+    gocd:
+      baseUrl: https://your.gocd.instance.com
+
+    stackstorm:
+      webUrl: https://your.stackstorm.webui.instance.com
+
+    sentry:
+      organization: my-company
+
+    rollbar:
+      organization: my-company
+      # NOTE: The rollbar-backend & accountToken key may be deprecated in the future (replaced by a proxy config)
+      accountToken: my-rollbar-account-token
+
+    lighthouse:
+      baseUrl: http://localhost:3003
+
+    # Score-cards sample configuration.
+    scorecards:
+      jsonDataUrl: https://raw.githubusercontent.com/Oriflame/backstage-plugins/main/plugins/score-card/sample-data/
+      wikiLinkTemplate: https://link-to-wiki/{id}
+
+    kafka:
+      clientId: backstage
+      clusters:
+        - name: cluster
+          dashboardUrl: https://akhq.io/
+          brokers:
+            - localhost:9092
+            
+    kubernetes:
+      serviceLocatorMethod:
+        type: 'multiTenant'
+      clusterLocatorMethods:
+        - type: 'config'
+          clusters: []
+
+
+
 
 
 
