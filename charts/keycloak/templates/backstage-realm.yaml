@@ -96,7 +96,7 @@ spec:
     identityProviderMappers:
       - name: Firstname
         identityProviderAlias: openshift-v4
-        identityProviderMappe: hardcoded-attribute-idp-mapper
+        identityProviderMapper: hardcoded-attribute-idp-mapper
         config:
           attribute.value: Backstage
           syncMode: INHERIT
