@@ -85,7 +85,7 @@ spec:
         trustEmail: true
         storeToken: false
         addReadTokenRoleOnCreate: false
-        authenticateByDefault: false
+        # authenticateByDefault: false
         firstBrokerLoginFlowAlias: 'first broker login'
         linkOnly: false
         config: 
