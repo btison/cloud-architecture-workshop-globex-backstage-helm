@@ -92,7 +92,7 @@ spec:
           syncMode: IMPORT
           baseUrl: {{ .Values.cluster.api }}
           clientId: {{ .Values.identityProvider.clientId }}
-          useJwksUrl: true
+          useJwksUrl: "true"
     identityProviderMappers:
       - name: Firstname
         identityProviderAlias: openshift-v4
