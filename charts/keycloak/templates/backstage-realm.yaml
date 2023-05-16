@@ -1,0 +1,124 @@
+---
+kind: KeycloakRealm
+apiVersion: keycloak.org/v1alpha1
+metadata:
+  name: {{ .Values.name }}
+spec:
+  instanceSelector:
+    matchLabels:
+      app: {{ .Values.keycloak.selector.app }}
+  realm:
+    id: {{ .Values.name }}
+    realm: {{ .Values.name }}
+    enabled: true
+    displayName: {{ .Values.name }}
+    eventsEnabled: false
+    adminEventsEnabled: false
+    clients:
+      - clientId: backstage
+        enabled: true
+        surrogateAuthRequired: false
+        clientAuthenticatorType: client-secret
+        secret: NmNplwgNLJjtiDTweYPCKoVlfe3IEvm8
+        redirectUris:
+          - "https://{{ .Values.backstage.host }}/oauth2/callback/"
+          - "https://{{ .Values.backstage.host }}/*"
+          - "/*"
+          - "https://{{ .Values.backstage.host }}/oauth2/callback/*"
+        webOrigins:
+          - "*"        
+        bearerOnly: false
+        consentRequired: false
+        standardFlowEnabled: true
+        implicitFlowEnabled: false
+        directAccessGrantsEnabled: true
+        serviceAccountsEnabled: false
+        publicClient: false
+        frontchannelLogout: false
+        protocol: openid-connect
+        attributes:
+          saml.multivalued.roles: false
+          saml.force.post.binding: false
+          frontchannel.logout.session.required: false
+          oauth2.device.authorization.grant.enabled: false
+          backchannel.logout.revoke.offline.tokens: false
+          saml.server.signature.keyinfo.ext: false
+          use.refresh.tokens: true
+          oidc.ciba.grant.enabled: false
+          backchannel.logout.session.required: true
+          client_credentials.use_refresh_token: false
+          saml.client.signature: false
+          require.pushed.authorization.requests: false
+          saml.allow.ecp.flow: false
+          saml.assertion.signature: false
+          id.token.as.detached.signature: false
+          client.secret.creation.time: 1683565965
+          saml.encrypt: false
+          saml.server.signature: false
+          exclude.session.state.from.auth.response: false
+          saml.artifact.binding: false
+          saml_force_name_id_format: false
+          tls.client.certificate.bound.access.tokens: false
+          acr.loa.map: "{}"
+          saml.authnstatement: false
+          display.on.consent.screen: false
+          token.response.type.bearer.lower-case: false
+          saml.onetimeuse.condition: false
+        fullScopeAllowed: true
+        nodeReRegistrationTimeout: -1
+        defaultClientScopes:
+          - web-origins
+          - acr
+          - roles
+          - profile
+          - email        
+        optionalClientScopes:
+          - address
+          - phone
+          - offline_access
+          - microprofile-jwt
+    identityProviders:
+      - alias: openshift-v4
+        displayName: OpenShift
+        providerId: openshift-v4
+        enabled: true
+        trustEmail: true
+        storeToken: false
+        addReadTokenRoleOnCreate: false
+        authenticateByDefault: false
+        firstBrokerLoginFlowAlias: 'first broker login'
+        linkOnly: false
+        config: 
+          syncMode: IMPORT
+          baseUrl: {{ .Values.cluster.api }}
+          clientId: {{ .Values.identityProvider.clientId }}
+          useJwksUrl: true
+    identityProviderMappers:
+      - name: Firstname
+        identityProviderAlias: openshift-v4
+        identityProviderMappe: hardcoded-attribute-idp-mapper
+        config:
+          attribute.value: Backstage
+          syncMode: INHERIT
+          attribute: firstName
+      - name: map-uid-to-email
+        identityProviderAlias: openshift-v4
+        identityProviderMapper: openshift-v4-user-attribute-mapper
+        config: 
+          syncMode: INHERIT
+          jsonField: metadata.uid
+          userAttribute: email          
+      - name: LastName
+        identityProviderAlias: openshift-v4
+        identityProviderMapper: openshift-v4-user-attribute-mapper
+        config:
+          syncMode: INHERIT
+          jsonField: metadata.name
+          userAttribute: lastName
+    authenticatorConfig:
+      - alias: create unique user config
+        config:
+          require.password.update.after.registration: 'false'
+      - alias: review profile config
+        config:
+          update.profile.on.first.login: 'off'

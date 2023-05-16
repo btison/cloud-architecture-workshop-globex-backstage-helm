@@ -1,0 +1,15 @@
+name: backstage
+
+keycloak:
+  namespace: rhsso
+  selector:
+    app: rhsso
+
+backstage:
+  host: ""
+
+cluster: 
+  api: ""
+
+identityProvider:
+  clientId: 'system:serviceaccount:rhsso:rhsso'
